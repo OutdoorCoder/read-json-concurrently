@@ -23,7 +23,7 @@ type fileBufferSpecs struct {
 	BufferSize     int64
 }
 
-func ReadFileConcur(filePath string, memorySize uint64, goRoutineCount int64, killChan chan os.Signal, outPutChan chan []byte) { //, shutDownChan chan os.Signal
+func ReadFileConcur(filePath string, memorySize uint64, goRoutineCount int, killChan chan os.Signal, outPutChan chan []byte) { //, shutDownChan chan os.Signal
 
 	//check to make sure file is valid.
 	file, err := os.Open(filePath)
@@ -78,28 +78,31 @@ func ReadFileConcur(filePath string, memorySize uint64, goRoutineCount int64, ki
 
 	var wg2 sync.WaitGroup
 
-	i := int64(0)
+	readWorkerChan := createWorkQueue(goRoutineCount)
+
+	//Copy the pattern from pasttime to do this (createworkerqueue), might take some changing up
 	for buffSpec := range startingPointChan {
 
+		<-readWorkerChan
 		wg2.Add(1)
-		go fileReadWorker(buffSpec, outPutChan, file, &wg2)
+		go fileReadWorker(buffSpec, outPutChan, file, readWorkerChan, &wg2)
 
-		i++
-		if i < goRoutineCount {
-			continue
-		}
-
-		wg2.Wait()
-		i = 0
 	}
 
-	if i != goRoutineCount {
-		wg2.Wait()
-	}
+	wg2.Wait()
 
 	close(outPutChan)
 	fmt.Println("RETURNING BYTE CHANNEL")
 
+}
+
+//	reate channel-based worker queue
+func createWorkQueue(max int) chan bool {
+	workChan := make(chan bool, max)
+	for i := 1; i <= max; i++ {
+		workChan <- true
+	}
+	return workChan
 }
 
 //Need to adjust to run within a specified amount of memory. mayb...
@@ -150,9 +153,13 @@ func fileStartPointWorker(startingPointPool chan fileBufferSpecs, inputFile *os.
 
 }
 
-func fileReadWorker(buffSpecs fileBufferSpecs, jobs chan []byte, inputFile *os.File, wg *sync.WaitGroup) {
+func fileReadWorker(buffSpecs fileBufferSpecs, jobs chan []byte, inputFile *os.File, signalChan chan bool, wg *sync.WaitGroup) {
 
 	defer wg.Done()
+
+	defer func() {
+		signalChan <- true
+	}()
 
 	fileBuffer := make([]byte, buffSpecs.BufferSize)
 	_, err := inputFile.ReadAt(fileBuffer, buffSpecs.StartingOffset)
