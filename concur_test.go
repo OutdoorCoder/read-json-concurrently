@@ -24,6 +24,8 @@ type pblog struct {
 //Just need a json file to work with, then I'll print out the resulting objects.
 //Make a standard file read test to run alongside this
 
+///Users/cameronmassey/go/src/github.com/read-concur/remainingRequests.20200714115623.json 20200803152110
+
 func TestReadConcur(t *testing.T) {
 
 	var request pblog
@@ -31,13 +33,13 @@ func TestReadConcur(t *testing.T) {
 
 	fmt.Println("Running File Read Test")
 	//100000000 appears to be too large to
-	go ReadFileConcur("remainingRequests.20200803152110.json", 50000000, 20, nil, jobs)
+	go ReadFileConcur("remainingRequests.20200714115623.json", 50000000, 10, nil, jobs)
 
 	i := 0
 	for j := range jobs {
 
 		i++
-		fmt.Println("Unmarshalling line")
+		//fmt.Println("Unmarshalling line")
 		err := json.Unmarshal(bytes.Trim(j, "[,]"), &request)
 		fmt.Println(request)
 		if err != nil {
@@ -53,14 +55,16 @@ func TestReadConcur(t *testing.T) {
 func TestReadNormal(t *testing.T) {
 
 	var requests []pblog
-	path := "remainingRequests.20200803152110.json"
+	path := "remainingRequests.20200714115623.json"
 
 	dat, err := ioutil.ReadFile(path)
 	if err != nil {
+		fmt.Println("ERROR: ", err)
 		return
 	}
 	err = json.Unmarshal(dat, &requests)
 	if err != nil {
+		fmt.Println("ERROR: ", err.Error())
 		return
 	}
 
