@@ -1,4 +1,4 @@
-package concur
+package main
 
 import (
 	"bufio"
@@ -21,6 +21,10 @@ type scanByteCounter struct {
 type fileBufferSpecs struct {
 	StartingOffset int64
 	BufferSize     int64
+}
+
+func main() {
+
 }
 
 func ReadFileConcur(filePath string, memorySize uint64, goRoutineCount int, killChan chan os.Signal, outPutChan chan []byte) { //, shutDownChan chan os.Signal

@@ -1,4 +1,4 @@
-package concur
+package main
 
 import (
 	"bytes"
